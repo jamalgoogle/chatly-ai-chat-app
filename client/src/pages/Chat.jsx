@@ -12,6 +12,8 @@ export default function Chat() {
   const [messages, setMessages] = useState([]);
   const [isThinking, setIsThinking] = useState(false);
   const [error, setError] = useState("");
+  const [revealId, setRevealId] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const loadConversations = useCallback(async () => {
     const { data } = await api.get("/conversations");
@@ -26,6 +28,7 @@ export default function Chat() {
   }, [loadConversations]);
 
   useEffect(() => {
+    setRevealId(null);
     if (!activeId) {
       setMessages([]);
       return;
@@ -40,10 +43,12 @@ export default function Chat() {
     setConversations((prev) => [{ ...data, updated_at: new Date().toISOString() }, ...prev]);
     setActiveId(data.id);
     setMessages([]);
+    setSidebarOpen(false);
   }
 
   async function handleSelect(id) {
     setActiveId(id);
+    setSidebarOpen(false);
   }
 
   async function handleRename(id, title) {
@@ -81,6 +86,7 @@ export default function Chat() {
         headers: { "Content-Type": "multipart/form-data" },
       });
       setMessages((prev) => [...prev, data.userMessage, data.assistantMessage]);
+      setRevealId(data.assistantMessage.id);
       loadConversations();
     } catch (err) {
       setError(err.response?.data?.error || "Could not send that message. Try again.");
@@ -92,6 +98,7 @@ export default function Chat() {
   return (
     <div className="app-shell">
       <Sidebar
+        className={sidebarOpen ? "open" : ""}
         conversations={conversations}
         activeId={activeId}
         onSelect={handleSelect}
@@ -102,8 +109,23 @@ export default function Chat() {
         onLogout={logout}
       />
 
+      {sidebarOpen && (
+        <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />
+      )}
+
       <main className="chat-panel">
-        <MessageList messages={messages} isThinking={isThinking} />
+        <div className="mobile-topbar">
+          <button
+            className="sidebar-toggle-btn"
+            aria-label={sidebarOpen ? "Close chat list" : "Open chat list"}
+            onClick={() => setSidebarOpen((open) => !open)}
+          >
+            ☰
+          </button>
+          <span className="mobile-topbar-title">Chatly</span>
+        </div>
+
+        <MessageList messages={messages} isThinking={isThinking} revealId={revealId} />
         {error && <div className="chat-error">{error}</div>}
         <Composer onSend={handleSend} disabled={isThinking} />
       </main>

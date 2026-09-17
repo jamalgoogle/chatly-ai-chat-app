@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 export default function Sidebar({
+  className = "",
   conversations,
   activeId,
   onSelect,
@@ -25,7 +26,7 @@ export default function Sidebar({
   }
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${className}`.trim()}>
       <button className="new-chat-btn" onClick={onNewChat}>
         <span className="plus">+</span> New chat
       </button>

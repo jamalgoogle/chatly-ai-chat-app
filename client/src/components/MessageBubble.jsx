@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+
 function formatSize(bytes) {
   if (!bytes) return "";
   if (bytes < 1024) return `${bytes} B`;
@@ -5,14 +7,52 @@ function formatSize(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export default function MessageBubble({ message }) {
+// Reveals `text` a few characters at a time. Only runs when `enabled` is
+// true (the message that just arrived) — history loaded from the server
+// shows instantly.
+function useTypewriter(text, enabled) {
+  const [shown, setShown] = useState(enabled ? "" : text || "");
+
+  useEffect(() => {
+    if (!enabled || !text) {
+      setShown(text || "");
+      return;
+    }
+    setShown("");
+    let i = 0;
+    const step = Math.max(1, Math.round(text.length / 220)); // keep long replies snappy
+    const id = setInterval(() => {
+      i += step;
+      setShown(text.slice(0, i));
+      if (i >= text.length) clearInterval(id);
+    }, 15);
+    return () => clearInterval(id);
+  }, [text, enabled]);
+
+  return shown;
+}
+
+// Strips leftover Markdown syntax (**bold**, *italic*, "* " bullets) so
+// text always renders plain, even for older saved messages.
+function stripMarkdown(text) {
+  if (!text) return text;
+  return text
+    .replace(/^(\s*)\*\s+/gm, "$1- ")
+    .replace(/\*\*(.+?)\*\*/g, "$1")
+    .replace(/\*(.+?)\*/g, "$1");
+}
+
+export default function MessageBubble({ message, animate = false }) {
   const isUser = message.role === "user";
   const images = (message.attachments || []).filter((a) => a.mime_type?.startsWith("image/"));
   const files = (message.attachments || []).filter((a) => !a.mime_type?.startsWith("image/"));
+  const cleanContent = stripMarkdown(message.content);
+  const revealAssistantText = useTypewriter(cleanContent, animate && !isUser);
+  const displayText = isUser ? cleanContent : revealAssistantText;
+  const stillTyping = animate && !isUser && displayText.length < (cleanContent || "").length;
 
   return (
     <div className={`message-row ${isUser ? "from-user" : "from-assistant"}`}>
-      <div className="avatar">{isUser ? "You" : "AI"}</div>
       <div className="message-bubble">
         {images.length > 0 && (
           <div className="image-grid">
@@ -36,7 +76,12 @@ export default function MessageBubble({ message }) {
           </div>
         )}
 
-        {message.content && <p className="message-text">{message.content}</p>}
+        {message.content && (
+          <p className="message-text">
+            {displayText}
+            {stillTyping && <span className="type-cursor" />}
+          </p>
+        )}
       </div>
     </div>
   );

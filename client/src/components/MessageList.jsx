@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import MessageBubble from "./MessageBubble.jsx";
 
-export default function MessageList({ messages, isThinking }) {
+export default function MessageList({ messages, isThinking, revealId }) {
   const bottomRef = useRef(null);
 
   useEffect(() => {
@@ -22,12 +22,11 @@ export default function MessageList({ messages, isThinking }) {
   return (
     <div className="message-list">
       {messages.map((m) => (
-        <MessageBubble key={m.id} message={m} />
+        <MessageBubble key={m.id} message={m} animate={m.id === revealId} />
       ))}
 
       {isThinking && (
         <div className="message-row from-assistant">
-          <div className="avatar">AI</div>
           <div className="message-bubble">
             <span className="typing-dots">
               <span></span>

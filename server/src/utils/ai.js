@@ -3,7 +3,9 @@ import { GoogleGenAI } from "@google/genai";
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 const SYSTEM_INSTRUCTION =
-  "You are a helpful, friendly assistant in a chat app. Keep answers clear and concise unless the user asks for more detail.";
+  "You are a helpful, friendly assistant in a chat app. Keep answers clear and concise unless the user asks for more detail. " +
+  "Write in plain text only — no Markdown syntax. Do not use asterisks for bold or bullet points, and do not use # headings or backticks. " +
+  "For lists, start each line with a dash and a space instead.";
 
 const MAX_ATTEMPTS = 4;
 const BASE_DELAY_MS = 1000; // 1s, then 2s, then 4s between retries
